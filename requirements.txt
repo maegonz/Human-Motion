@@ -6,3 +6,5 @@ tokenizers==0.22.1
 tqdm==4.67.1
 transformers==4.57.3
 tensorflow
+numpy==2.3.5
+path==17.1.1
