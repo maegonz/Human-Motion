@@ -5,19 +5,27 @@ from typing import Union
 from pathlib import Path
 from torch.utils.data import Dataset
 
+# directories containing text descriptions and motion files
+text_dir = './data/texts/'  # directory containing all .txt description files
+motion_dir = './data/motions/'  # directory containing all .npy motion files
+
+# get sorted list of all text files and motion files
+all_text = sorted(glob(os.path.join(text_dir, '*.txt')))
+all_motion = sorted(glob(os.path.join(motion_dir, '*.npy')))
+
 
 class MotionDataset(Dataset):
     def __init__(self,
-                 text_dir: Union[str, Path],
-                 motion_dir: Union[str, Path]):
+                 file: str = "train"):
         """
         Params
         -------
-        text_dir : str, Path
-            Directory with all the text descriptions files.
-        motion_dir : str, Path
-            Directory with all motion files.
+        file : str
+            File containing the list of data samples to be used.
+            "val", "train" or "test". Defaults to "train".
         """
+
+        assert file in ["train", "val", "test"], "file argument must be one of 'train', 'val', or 'test'"
 
         # path of the text descripions and motions directory
         # .../text/
@@ -26,12 +34,18 @@ class MotionDataset(Dataset):
         self.motion_dir = motion_dir
 
         # get sorted list of all text files and motion files
-        self.text_files = sorted(glob(os.path.join(self.text_dir, '*.txt')))
-        self.motion_files = sorted(glob(os.path.join(self.motion_dir, '*.npy')))
+        self.all_text = all_text
+        self.all_motion = all_motion
+
+        self.files_name = []
+        with open('./data/' + file + '.txt', 'r') as f:
+            self.files_name = f.read().splitlines()
+
+        self.text_files = sorted([i for i in self.all_text if os.path.basename(i).split('.')[0] in self.files_name])
+        self.motion_files = sorted([i for i in self.all_motion if os.path.basename(i).split('.')[0] in self.files_name])
     
     def __len__(self):
-        assert len(self.text_files) == len(self.motion_files), "Number of text files and motion files must be the same."
-        return len(self.motion_files)
+        return len(self.files_name)
     
     def __getitem__(self, idx):
         # read npy motion file
