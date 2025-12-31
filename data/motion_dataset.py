@@ -73,6 +73,6 @@ class MotionDataset(Dataset):
         return {
             "motion": motion,
             "text": text,
-            "input_ids": tokenized_texts.input_ids,
-            "attention_mask": tokenized_texts.attention_mask
+            "input_ids": tokenized_texts["input_ids"],
+            "attention_mask": tokenized_texts["attention_mask"]
         }
