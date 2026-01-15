@@ -73,29 +73,43 @@ class MultiHeadAttention(nn.Module):
 
 
 class PositionalEmbedding(nn.Module):
-    def __init__(self, model_dim: int, max_seq_len: int):
+    def __init__(self, model_dim: int):
         """
+        Compute dynamicalely the positional encoding for input sequences.
+
+        Params
+        -------
         model_dim : int
             model's input dimension
-        max_seq_len : int
-            maximum lenght of the sequence for which positional encodings
-            are pre-computed
         """
         super(PositionalEmbedding, self).__init__()
-        
-        pe = torch.zeros(max_seq_len, model_dim)  # Tensor later filled with positional encodings
-        position = torch.arange(0, max_seq_len, dtype=torch.float).unsqueeze(1)  # Tensor containing the position indices for each position in the sequences
-        div_term = torch.exp(torch.arange(0, model_dim, 2).float() * -(math.log(10000.0) / model_dim))
+        self.model_dim = model_dim
+            
+    def _compute_pe(self, x):
+        """
+        Compute the positional encoding for input tensor x.
+
+        Params
+        -------
+        x: torch.Tensor
+            input tensor of shape (batch_size, seq_len, model_dim)
+        """
+        seq_len = x.size(1)
+        device = x.device
+
+        position = torch.arange(seq_len, dtype=torch.float, device=device).unsqueeze(1)  # Tensor containing the position indices for each position in the sequences
+        div_term = torch.exp(torch.arange(0, self.model_dim, 2, device=device).float() * -(math.log(10000.0) / self.model_dim))
         
         # Scaling the position indices
+        pe = torch.zeros(seq_len, self.model_dim, device=device)  # Tensor later filled with positional encodings
         pe[:, 0::2] = torch.sin(position * div_term)  # sin applied to the even indices
         pe[:, 1::2] = torch.cos(position * div_term)  # cos applied to the odd indices
         pe = pe.unsqueeze(0)
-        
-        self.register_buffer('pe', pe)
+    
+        return pe
         
     def forward(self, x):
-        x = x + self.pe[:, :x.size(1)]
+        x = x + self._compute_pe(x)
         return x
     
 
