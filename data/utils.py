@@ -6,7 +6,7 @@ def collate_fn_motion(batch):
 
     Params
     -------
-    batch : list[tensor]
+    batch : list[dict]
         List of motions in the batch.
     
     Returns
@@ -16,15 +16,33 @@ def collate_fn_motion(batch):
     attn_mask : tensor
         Attention mask indicating the valid positions in the sequences.
     """
-    lengths = [motion.shape[0] for motion in batch]
+
+    # Compute the maximum length in the batch
+    lengths = [item['motion'].shape[0] for item in batch]
     max_length = max(lengths)
 
     padded = torch.zeros(len(batch), max_length, 22, 3)  # Assuming motion has shape (T, 22, 3)
     attn_mask = torch.zeros(len(batch), max_length)
 
-    for i, motion in enumerate(batch):
+    for i, item in enumerate(batch):
+        motion = torch.from_numpy(item['motion'])  # shape: (T, 22, 3)
         length = motion.shape[0]
         padded[i, :length] = motion
         attn_mask[i, :length] = 1   
 
-    return padded, attn_mask
+    # Concatenate captions tokens
+    caption_tokens = torch.stack(
+        [item['input_ids'].squeeze(0) for item in batch], dim=0
+    )
+    
+    # Concatenate t5 attention masks
+    t5_attn_mask = torch.stack(
+        [item['t5_attn_mask'].squeeze(0) for item in batch], dim=0
+    )
+
+    return {
+        "motion": padded,
+        "attn_mask": attn_mask,
+        "input_ids": caption_tokens,
+        "t5_attn_mask": t5_attn_mask
+    }
