@@ -29,6 +29,7 @@ class MotionDataset(Dataset):
         """
 
         assert file in ["train", "val", "test"], "file argument must be one of 'train', 'val', or 'test'"
+        self.file = file
 
         # path of the text descripions and motions directory
         # .../text/
@@ -59,21 +60,26 @@ class MotionDataset(Dataset):
         # read npy motion file
         motion = np.load(self.motion_files[idx])
 
-        # get the corresponding description for the associated motion
-        with open(self.text_files[idx]) as f:
-            descriptions = [
-                caption.split('#')[0].capitalize() for caption in f.readlines()
-            ]
-        
-        #TODO: deal with multiple captions
-        text = rd.choice(descriptions)
+        if self.file != "test":
+            # get the corresponding description for the associated motion
+            with open(self.text_files[idx]) as f:
+                descriptions = [
+                    caption.split('#')[0].capitalize() for caption in f.readlines()
+                ]
+            
+            #TODO: deal with multiple captions
+            text = rd.choice(descriptions)
 
-        # Tokenize the text description
-        tokens = self.tokenizer(text, padding='max_length', max_length=512, truncation=True, return_tensors='pt')
+            # Tokenize the text description
+            tokens = self.tokenizer(text, padding='max_length', max_length=512, truncation=True, return_tensors='pt')
 
-        return {
-            "motion": motion,
-            "captions": text,
-            "input_ids": tokens["input_ids"],  # shape: (1, seq_len)
-            "t5_attn_mask": tokens["attention_mask"],  # shape: (1, seq_len)
-        }
+            return {
+                "motion": motion,
+                "captions": text,
+                "input_ids": tokens["input_ids"],  # shape: (1, seq_len)
+                "t5_attn_mask": tokens["attention_mask"],  # shape: (1, seq_len)
+            }
+        else:
+            return {
+                "motion": motion,
+            }
